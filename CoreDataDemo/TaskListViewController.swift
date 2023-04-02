@@ -10,8 +10,6 @@ import CoreData
 
 class TaskListViewController: UITableViewController {
     
-    private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
     private let cellID = "task"
     private var taskList: [Task] = []
 
@@ -25,10 +23,11 @@ class TaskListViewController: UITableViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        fetchData()
+        taskList = StorageMansger.shared.fetchTask()
         tableView.reloadData()
     }
-
+//MARK: - setupUI
+    
     private func setupNavigationBar() {
         title = "Task List"
         navigationController?.navigationBar.prefersLargeTitles = true
@@ -63,16 +62,18 @@ class TaskListViewController: UITableViewController {
         showAlert(with: "New Task", and: "What do you want to do?")
     }
     
-    private func fetchData() {
-        let fetchRequest = Task.fetchRequest()
-        
-        do {
-            taskList = try context.fetch(fetchRequest)
-        } catch {
-            print("Failed to fetch data", error)
-        }
-    }
+//    private func fetchData() {
+//        let fetchRequest = Task.fetchRequest()
+//
+//        do {
+//            taskList = try context.fetch(fetchRequest)
+//        } catch {
+//            print("Failed to fetch data", error)
+//        }
+//    }
 }
+
+//MARK: - SetupTableView
 
 extension TaskListViewController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -87,10 +88,23 @@ extension TaskListViewController {
         cell.contentConfiguration = content
         return cell
     }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        showAlert(with: "Edit task", and: "Enter new value", task: taskList[indexPath.row])
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        StorageMansger.shared.delete(task: taskList[indexPath.row])
+        taskList.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .automatic)
+    }
 }
 
+//MARK: - Actions
+
 extension TaskListViewController {
-    private func showAlert(with title: String, and messege: String) {
+    private func showAlert(with title: String, and messege: String, task: Task? = nil) {
         let alert = UIAlertController(title: title, message: messege, preferredStyle: .alert)
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
@@ -98,27 +112,24 @@ extension TaskListViewController {
             self.save(task)
         }
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
+        
         alert.addAction(saveAction)
         alert.addAction(cancelAction)
         alert.addTextField { textField in
             textField.placeholder = "New Task"
         }
-        
         present(alert, animated: true)
     }
     
+    
+    
     private func save(_ taskName: String) {
-        let task = Task(context: context)
+        let task = StorageMansger.shared.save(newTask: taskName)
         task.name = taskName
         taskList.append(task)
-        
+
         let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
         tableView.insertRows(at: [cellIndex], with: .automatic)
-        
-        do {
-            try context.save()
-        } catch {
-            print(error)
-        }
+
     }
 }
