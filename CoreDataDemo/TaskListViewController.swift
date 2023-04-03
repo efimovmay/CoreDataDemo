@@ -23,7 +23,7 @@ class TaskListViewController: UITableViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        taskList = StorageMansger.shared.fetchTask()
+        taskList = StorageManager.shared.fetchTask()
         tableView.reloadData()
     }
 //MARK: - setupUI
@@ -61,16 +61,6 @@ class TaskListViewController: UITableViewController {
     @objc private func addNewTask() {
         showAlert(with: "New Task", and: "What do you want to do?")
     }
-    
-//    private func fetchData() {
-//        let fetchRequest = Task.fetchRequest()
-//
-//        do {
-//            taskList = try context.fetch(fetchRequest)
-//        } catch {
-//            print("Failed to fetch data", error)
-//        }
-//    }
 }
 
 //MARK: - SetupTableView
@@ -95,7 +85,7 @@ extension TaskListViewController {
     }
     
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        StorageMansger.shared.delete(task: taskList[indexPath.row])
+        StorageManager.shared.delete(task: taskList[indexPath.row])
         taskList.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .automatic)
     }
@@ -108,28 +98,35 @@ extension TaskListViewController {
         let alert = UIAlertController(title: title, message: messege, preferredStyle: .alert)
         
         let saveAction = UIAlertAction(title: "Save", style: .default) { _ in
-            guard let task = alert.textFields?.first?.text, !task.isEmpty else { return }
-            self.save(task)
+            guard let newName = alert.textFields?.first?.text, !newName.isEmpty else { return }
+            if let task = task {
+                StorageManager.shared.update(task: task, newName: newName)
+                self.tableView.reloadData()
+            } else {
+                self.save(newName)
+            }
         }
         let cancelAction = UIAlertAction(title: "Cancel", style: .destructive)
         
         alert.addAction(saveAction)
         alert.addAction(cancelAction)
         alert.addTextField { textField in
-            textField.placeholder = "New Task"
+            if task == nil {
+                textField.placeholder = "New Task"
+            } else {
+                textField.text = task?.name
+            }
         }
         present(alert, animated: true)
     }
     
-    
-    
     private func save(_ taskName: String) {
-        let task = StorageMansger.shared.save(newTask: taskName)
+        let task = StorageManager.shared.save(newTask: taskName)
         task.name = taskName
         taskList.append(task)
 
         let cellIndex = IndexPath(row: taskList.count - 1, section: 0)
         tableView.insertRows(at: [cellIndex], with: .automatic)
-
     }
+
 }

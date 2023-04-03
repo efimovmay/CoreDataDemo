@@ -8,10 +8,8 @@
 import UIKit
 import CoreData
 
-class StorageMansger {
-    static let shared = StorageMansger()
-    
- //   private let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+class StorageManager {
+    static let shared = StorageManager()
     
     lazy var persistentContainer: NSPersistentContainer = {
 
@@ -74,7 +72,14 @@ class StorageMansger {
         }
     }
     
-    func edit() {
+    func update(task: Task, newName: String) {
+        task.name = newName
+        
+        do {
+            try persistentContainer.viewContext.save()
+        } catch let error {
+            print(error)
+        }
     }
     
     init() {}
